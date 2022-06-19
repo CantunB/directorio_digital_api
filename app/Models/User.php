@@ -5,10 +5,15 @@ namespace App\Models;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use App\Models\UserCompany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\Hash;
 use Tymon\JWTAuth\Contracts\JWTSubject;
+use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable implements JWTSubject
 {
+    // use HasRoles;
+
+
     // use  HasFactory, Notifiable;
 
     protected $fillable = [
@@ -46,7 +51,7 @@ class User extends Authenticatable implements JWTSubject
     }
 
     public function setPasswordAttribute($password){
-        $this->attributes['password'] = bcrypt($password);
+        $this->attributes['password'] = Hash::make($password);
     }
     public function assigned_company(): BelongsTo
     {

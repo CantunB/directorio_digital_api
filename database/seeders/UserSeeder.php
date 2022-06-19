@@ -4,8 +4,11 @@ namespace Database\Seeders;
 
 use App\Models\User;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Hash;
 use Tymon\JWTAuth\Facades\JWTAuth as JWT;
-
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
+use Spatie\Permission\PermissionRegistrar;
 class UserSeeder extends Seeder
 {
     /**
@@ -16,14 +19,13 @@ class UserSeeder extends Seeder
     public function run()
     {
         // app()[PermissionRegistrar::class]->forgetCachedPermissions();
-        // $role3 = Role::create(['name' => 'Super-Admin']);
+        $role = Role::create(['name' => 'Super-Admin']);
 
         $user = User::create([
             'name' => 'Judith',
             'email' => 'judith@gmail.com',
-            'password' => bcrypt('Judith1234')
+            'password' => Hash::make('Judith1234')
         ]);
-
-        // $user->assignRole($role3);
+        // $user->assignRole($role);
     }
 }

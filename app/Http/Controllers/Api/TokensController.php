@@ -14,7 +14,7 @@ use Tymon\JWTAuth\Exceptions\TokenExpiredException;
 use Tymon\JWTAuth\Exceptions\JWTException;
 use Illuminate\Support\Facades\Auth;
 use Tymon\JWTAuth\Facades\JWTAuth as JWT;
-
+use Validator;
 class TokensController extends Controller
 {
 
@@ -48,59 +48,38 @@ class TokensController extends Controller
     public function authenticate(Request $request)
     {
         $credentials = $request->only('email', 'password');
-        $request->validate([
-            "email" => "required|email",
-            "password" => "required"
+
+        $validator = Validator::make($credentials, [
+            'email' => 'required|email',
+            'password' => 'required'
         ]);
-        $user = User::where("email", "=", $request->email)->first();
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'code' => 1,
+                'message' => 'Wrong validation',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        $email = $request->input('email');
+        $user = User::where('email', '=', $email)->first();
         try {
-            // if (! $token = JWTAuth::fromUser($user)) {
-            //     return response()->json(['error' => 'invalid_credentials'], 400);
-            // }
-            if( isset($user->id)){
-                if(Hash::check($request->password, $user->password)){
-                    // $token = $user->createToken("auth_token")->plainTextToken;
-                    $token = JWT::fromUser($user);
-                    return response()->json([
-                        "status" => 1,
-                        "message" => "Inicio de sesion correcto",
-                        "access_token" => $token
-                    ],200);
-                }else{
-                    return response()->json([
-                        "status" => 0,
-                        "message" => "Contraseña incorrecta"
-                    ], 401);
-                }
-            }else{
-                return response()->json([
-                    "status" => 0,
-                    "message" => "Correo no registrado"
-                ], 401);
+            // verify the credentials and create a token for the user
+            if (! $token = JWT::fromUser($user)) {
+                return response()->json(['error' => 'invalid_credentials'], 401);
             }
         } catch (JWTException $e) {
+            // something went wrong
             return response()->json(['error' => 'could_not_create_token'], 500);
         }
-        return response()->json(compact('token'));
-
-
-    }
-
-    public function getAuthenticatedUser(Request $request)
-    {
-        //Validamos que la request tenga el token
-        $this->validate($request, [
-            'token' => 'required'
-        ]);
-        //Realizamos la autentificación
-        $user = JWT::authenticate($request->token);
-        //Si no hay usuario es que el token no es valido o que ha expirado
-        if(!$user)
-            return response()->json([
-                'message' => 'Invalid token / token expired',
-            ], 401);
-        //Devolvemos los datos del usuario si todo va bien.
-        return response()->json(['user' => $user]);
+        // if no errors are encountered we can return a JWT
+        return response()->json([
+            'message' => 'Welcome to directory digital',
+            'user' => $user,
+            "access_token" => $token
+        ], 201);
     }
 
     /**
@@ -140,8 +119,7 @@ class TokensController extends Controller
             $token = JWT::refresh($token);
             return response()->json([
                 'sucess' => true,
-                'token' => $token
-
+                'access_token' => $token
             ], 200);
         }catch (TokenExpiredException $ex){
             return response()->json([
@@ -166,20 +144,15 @@ class TokensController extends Controller
      */
     public function profile(Request $request): JsonResponse
     {
-        //Validamos que la request tenga el token
         $this->validate($request, [
             'token' => 'required'
         ]);
-        //Realizamos la autentificación
         $user = JWT::authenticate($request->token);
-        //Si no hay usuario es que el token no es valido o que ha expirado
         if(!$user)
             return response()->json([
                 'message' => 'Invalid token / token expired',
             ], 401);
-        //Devolvemos los datos del usuario si todo va bien.
         return response()->json(['user' => $user]);
-
     }
 
     /**
